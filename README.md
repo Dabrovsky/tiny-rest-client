@@ -84,7 +84,7 @@ client = MyClient.new
 client.fetch_todos(page: 1, per_page: 20)
 client.fetch_todo(1)
 client.create_todo(name: "Custom")
-client.update_todo(status: "finished")
+client.update_todo(1, status: "finished")
 client.destroy_todo(1)
 ```
 
