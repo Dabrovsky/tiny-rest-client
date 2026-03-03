@@ -32,7 +32,7 @@ A minimal, opinionated HTTP client wrapper for Rails, built on top of Typhoeus. 
 Add this line to your Gemfile:
 
 ```bash
-gem "tiny-rest-client", require: "tiny_rest_client"
+gem "tiny-rest-client"
 ```
 
 Or install it manually:
