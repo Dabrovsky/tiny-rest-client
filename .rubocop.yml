@@ -28,3 +28,7 @@ Metrics/AbcSize:
   Max: 20
   Exclude:
     - "test/**/*"
+
+Naming/FileName:
+  Exclude:
+    - "lib/tiny-rest-client.rb"
