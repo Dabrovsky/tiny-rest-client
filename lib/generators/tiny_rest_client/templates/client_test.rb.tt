@@ -1,0 +1,19 @@
+require "test_helper"
+
+class <%= class_name %>Test < ActiveSupport::TestCase
+  attr_reader :client
+
+  setup do
+    @client = <%= class_name %>.new
+  end
+
+  test "initializes with api path" do
+    assert_equal "<%= api_path %>", client.api_path
+  end
+
+  test "inherits from TinyRestClient::Core" do
+    assert_kind_of TinyRestClient::Core, client
+  end
+
+  # Add your client-specific tests below
+end
