@@ -12,6 +12,8 @@ require "tiny_rest_client/request"
 require "tiny_rest_client/response"
 require "tiny_rest_client/version"
 
+require "tiny_rest_client/railtie" if defined?(Rails)
+
 module TinyRestClient
   class Core
     class << self

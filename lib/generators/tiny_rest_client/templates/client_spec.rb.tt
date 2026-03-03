@@ -1,0 +1,19 @@
+require "rails_helper"
+
+RSpec.describe <%= class_name %>, type: :client do
+  subject(:client) { described_class.new }
+
+  describe "#initialize" do
+    it "sets the api path" do
+      expect(client.api_path).to eq("<%= api_path %>")
+    end
+  end
+
+  describe "inheritance" do
+    it "inherits from TinyRestClient::Core" do
+      expect(client).to be_a(TinyRestClient::Core)
+    end
+  end
+
+  # Add your client-specific tests below
+end

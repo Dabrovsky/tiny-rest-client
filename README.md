@@ -19,6 +19,7 @@ A minimal, opinionated HTTP client wrapper for Rails, built on top of Typhoeus. 
 
 - [Installation](#installation)
 - [Basic Usage](#basic-usage)
+- [Rails Generator](#rails-generator)
 - [Configuration](#configuration)
 - [Authorization](#authorization)
 - [Making Requests](#making-requests)
@@ -31,7 +32,7 @@ A minimal, opinionated HTTP client wrapper for Rails, built on top of Typhoeus. 
 Add this line to your Gemfile:
 
 ```bash
-gem "tiny-rest-client"
+gem "tiny-rest-client", require: "tiny_rest_client"
 ```
 
 Or install it manually:
@@ -85,6 +86,38 @@ client.fetch_todo(1)
 client.create_todo(name: "Custom")
 client.update_todo(status: "finished")
 client.destroy_todo(1)
+```
+
+## Rails Generator
+
+The gem includes a built-in Rails generator to quickly scaffold new API clients.
+
+```bash
+rails generate tiny_rest_client:client NAME [URL] [options]
+```
+
+### Available options
+
+| Option          | Default       | Description                                                 | Example Usage        |
+|-----------------|---------------|-------------------------------------------------------------|----------------------|
+| NAME            | (required)    | Client name (supports nesting like `api/v1/stripe`)         | `rails g ... api/v1/stripe` |
+| URL             | (none)        | Base API URL | `rails g ... stripe https://api.stripe.com`  |
+| --namespace     | `clients`     | Root folder under `app/` (e.g. `app/services/...`)          | `--namespace=services` |
+
+### Basic usage
+
+```bash
+# Basic client
+rails generate tiny_rest_client:client stripe
+
+# Custom base URL
+rails generate tiny_rest_client:client stripe https://api.stripe.com/v1
+
+# Nested namespace (creates app/clients/api/v1/payment_client.rb)
+rails generate tiny_rest_client:client api/v1/payment https://api.example.com/v1
+
+# Custom namespace (creates app/custom/stripe_client.rb)
+rails generate tiny_rest_client:client stripe https://api.example.com/v1 --namespace=custom
 ```
 
 ## Configuration
@@ -176,7 +209,7 @@ MyClient.new(auth: { basic_auth: { user: "name", password: "secret" } })
 
 ## Making Requests
 
-The standard HTTP methods are available directly on every client instance automatically include any headers and/or authorization configuration you defined.
+The standard HTTP methods are available directly on every client instance automatically include any headers or authorization configuration you defined.
 
 ```ruby
 get("/users", page: 1, per_page: 10)            # GET request with query parameters
@@ -206,7 +239,7 @@ helpers:
 ```ruby
 response.success?    # true if code 200–299
 response.failure?    # opposite
-response.code        # HTTP status code (Integer)
+response.code        # HTTP status code
 response.status      # Typhoeus return_code symbol
 response.body        # auto-parsed JSON hash or raw string
 response.headers     # hash of response headers

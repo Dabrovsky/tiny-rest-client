@@ -1,0 +1,18 @@
+class <%= class_name %> < TinyRestClient::Core
+  api_path "<%= api_path %>"
+
+  # Define authorization type (optionally)
+  # authorization :bearer (:api_key or :basic_auth)
+  #
+  # Include headers (optionally)
+  # header "Content-Type", "application/json"
+
+  # Define helper methods
+  # def fetch_todos
+  #   get("/todos")
+  # end
+  #
+  # def fetch_todo(id)
+  #   get("/todos/#{id}")
+  # end
+end
