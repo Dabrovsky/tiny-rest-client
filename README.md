@@ -57,7 +57,7 @@ class MyClient < TinyRestClient::Core
   # pass bunch of headers (optional)
   headers "User-Agent": "MyTest/1.0", "Accept": "application/json"
 
-  # define actions
+  # define actions (optional)
   def fetch_todos(**)
     get("/todos", **)
   end
@@ -84,7 +84,7 @@ client = MyClient.new
 client.fetch_todos(page: 1, per_page: 20)
 client.fetch_todo(1)
 client.create_todo(name: "Custom")
-client.update_todo(1, status: "finished")
+client.update_todo(1, { status: "finished" })
 client.destroy_todo(1)
 ```
 
@@ -102,7 +102,7 @@ rails generate tiny_rest_client:client NAME [URL] [options]
 |-----------------|---------------|-------------------------------------------------------------|----------------------|
 | NAME            | (required)    | Client name (supports nesting like `api/v1/stripe`)         | `rails g ... api/v1/stripe` |
 | URL             | (none)        | Base API URL | `rails g ... stripe https://api.stripe.com`  |
-| --namespace     | `clients`     | Root folder under `app/` (e.g. `app/services/...`)          | `--namespace=services` |
+| --namespace     | `clients`     | Root folder under `app/` (e.g. `app/services/`)             | `--namespace=services` |
 
 ### Basic usage
 
@@ -128,7 +128,7 @@ You can configure client setup at the class level:
 class MyClient < TinyRestClient::Core
   api_path "https://api.example.com/v1"
   authorization :bearer, token: "your_token"
-  headers "Accept": "application/json", "User-Agent", "MyApp/1.0"
+  headers "Accept": "application/json", "User-Agent": "MyApp/1.0"
 end
 
 client = MyClient.new
