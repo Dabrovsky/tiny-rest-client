@@ -1,6 +1,6 @@
 # TinyRestClient
 
-A minimal, opinionated HTTP client wrapper for Rails, built on top of Typhoeus. Perfect for quickly building clean, opinionated API clients with almost no boilerplate.
+A minimal HTTP client wrapper for Rails, built on top of Typhoeus. Perfect for quickly building clean, opinionated API clients with almost no boilerplate.
 
 ### Features
 
@@ -22,6 +22,7 @@ A minimal, opinionated HTTP client wrapper for Rails, built on top of Typhoeus. 
 - [Rails Generator](#rails-generator)
 - [Configuration](#configuration)
 - [Authorization](#authorization)
+- [Retries & Delay (Throttling)](#retries-&-delay)
 - [Making Requests](#making-requests)
 - [Response Handling](#response-handling)
 - [Contributing](#contributing)
@@ -98,11 +99,11 @@ rails generate tiny_rest_client:client NAME [URL] [options]
 
 ### Available options
 
-| Option          | Default       | Description                                                 | Example Usage        |
-|-----------------|---------------|-------------------------------------------------------------|----------------------|
-| NAME            | (required)    | Client name (supports nesting like `api/v1/stripe`)         | `rails g ... api/v1/stripe` |
+| Option          | Default       | Description                                                 |
+|-----------------|---------------|-------------------------------------------------------------|
+| NAME            | (required)    | Client name (supports nesting like `api/v1/stripe`)         |
 | URL             | (none)        | Base API URL | `rails g ... stripe https://api.stripe.com`  |
-| --namespace     | `clients`     | Root folder under `app/` (e.g. `app/services/`)             | `--namespace=services` |
+| --namespace     | `clients`     | Root folder under `app/` (e.g. `app/services/`)             |
 
 ### Basic usage
 
@@ -207,6 +208,41 @@ end
 MyClient.new(auth: { basic_auth: { user: "name", password: "secret" } })
 ```
 
+## Retries & Delay (Throttling)
+
+The library supports automatic retries on server errors and a simple fixed delay (throttling) between requests, both configurable at class or instance level.
+
+### Retries
+
+Retries only happen on configurable HTTP status codes (default: 500, 502, 503, 504).
+
+```ruby
+class MyClient < TinyRestClient::Core
+  # class-level: retry 3 times on default 5xx errors
+  retries 3
+
+  # custom retryable codes
+  retries 5, on: [500..599]
+end
+
+# per-instance
+client = MyClient.new(retries: { count: 3, on: [500..599] })
+```
+
+### Delay (Throttling)
+
+Add a fixed delay (seconds) between each request - useful for rate-limited APIs (default: 1.0 second).
+
+```ruby
+class MyClient < TinyRestClient::Core
+  # class-level: wait 1 second between every retry
+  retries 3, delay: 1.0
+end
+
+# per-instance
+client = MyClient.new(retries: { count: 3, delay: 1.0 })
+```
+
 ## Making Requests
 
 The standard HTTP methods are available directly on every client instance automatically include any headers or authorization configuration you defined.
@@ -231,6 +267,7 @@ helpers:
 |--------|-------------|
 | success? | Helper that represent successful response. |
 | failure? | The opposite. |
+| timed_out? | Return request timeout status |
 | code | HTTP status code (e.g. `200`, `404`). |
 | status | Return code symbol (e.g. `:ok`, `:couldnt_connect`). |
 | headers | Hash of response headers (keys are not normalized). |
@@ -239,6 +276,7 @@ helpers:
 ```ruby
 response.success?    # true if code 200–299
 response.failure?    # opposite
+response.timed_out?  # Typhoeus timed_out status
 response.code        # HTTP status code
 response.status      # Typhoeus return_code symbol
 response.body        # auto-parsed JSON hash or raw string
@@ -251,8 +289,9 @@ TinyRestClient does not raise exceptions for HTTP status codes.
 
 Network-level errors (timeouts, connection failures, etc.) are reflected in:
 
-* response.status
 * response.success? / response.failure?
+* response.timed_out?
+* response.status
 
 This makes error handling explicit and predictable.
 
