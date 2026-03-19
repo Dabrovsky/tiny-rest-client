@@ -9,6 +9,7 @@ describe TinyRestClient do
     TinyRestClient::Core.instance_variable_set(:@api_path, nil)
     TinyRestClient::Core.instance_variable_set(:@auth_config, nil)
     TinyRestClient::Core.instance_variable_set(:@headers, nil)
+    TinyRestClient::Core.instance_variable_set(:@retry_options, nil)
     Typhoeus::Expectation.clear
   end
 
@@ -243,9 +244,116 @@ describe TinyRestClient do
     end
   end
 
+  describe "retries" do
+    let(:client) { TinyRestClient::Core.new(api_path: "https://api.test", retries: { count: 3, on: [503] }) }
+
+    it "retries 3 times on 503 and succeeds on 4th" do
+      mock_request = Minitest::Mock.new
+
+      # Simulate 3 failures and 1 success
+      mock_request.expect(:run, failure_response)
+      mock_request.expect(:run, failure_response)
+      mock_request.expect(:run, failure_response)
+      mock_request.expect(:run, success_response)
+
+      Typhoeus::Request.stub :new, ->(*) { mock_request } do
+        resp = client.get("/todos")
+
+        assert resp.success?
+        assert_equal 200, resp.code
+        assert_equal({ success: true }, resp.body)
+      end
+
+      mock_request.verify
+    end
+
+    it "does not retry on 400" do
+      mock_request = Minitest::Mock.new
+      mock_request.expect(:run, failure_response(400))
+
+      Typhoeus::Request.stub :new, ->(*) { mock_request } do
+        resp = client.get("/todos")
+        refute resp.success?
+        assert_equal 400, resp.code
+      end
+
+      mock_request.verify # only called once
+    end
+
+    it "retries on Typhoeus network error" do
+      mock_request = Minitest::Mock.new
+
+      mock_request.expect(:run, nil) { raise Typhoeus::Errors::TyphoeusError, "connection timeout" }
+      mock_request.expect(:run, nil) { raise Typhoeus::Errors::TyphoeusError, "connection timeout" }
+      mock_request.expect(:run, nil) { raise Typhoeus::Errors::TyphoeusError, "connection timeout" }
+      mock_request.expect(:run, success_response)
+
+      Typhoeus::Request.stub :new, ->(*) { mock_request } do
+        resp = client.get("/todos")
+        assert resp.success?
+      end
+
+      mock_request.verify
+    end
+
+    it "sleeps between retries" do
+      mock_request = Minitest::Mock.new
+
+      mock_request.expect(:run, failure_response)
+      mock_request.expect(:run, failure_response)
+      mock_request.expect(:run, failure_response)
+      mock_request.expect(:run, failure_response)
+
+      start_time = Time.now
+
+      Typhoeus::Request.stub :new, ->(*) { mock_request } do
+        client.get("/todos")
+      end
+
+      elapsed = Time.now - start_time
+
+      # Default delay: 1s + 1s + 1s = ~3s total sleep
+      assert elapsed > 2.9, "Expected default delay, got #{elapsed.round(2)}s"
+    end
+
+    it "uses custom delay" do
+      client = TinyRestClient::Core.new(
+        api_path: "https://api.test",
+        retries: {
+          count: 2,
+          delay: 2.0
+        }
+      )
+
+      mock_request = Minitest::Mock.new
+
+      mock_request.expect(:run, failure_response)
+      mock_request.expect(:run, failure_response)
+      mock_request.expect(:run, failure_response)
+
+      start_time = Time.now
+
+      Typhoeus::Request.stub(:new, ->(*) { mock_request }) do
+        client.get("/todos")
+      end
+
+      elapsed = Time.now - start_time
+
+      assert elapsed > 3.9, "Expected ~4s total delay (2s + 2s), got #{elapsed.round(2)}s"
+    end
+  end
+
   private
 
   def stub_request(code: 200, return_code: :ok, body: {})
     Typhoeus.stub("https://api.test/todos").and_return(Typhoeus::Response.new(code:, return_code:, body:))
+  end
+
+  def failure_response(code = 503, body = {})
+    Typhoeus::Response.new(code:, body:)
+  end
+
+  def success_response(code = 200, body = { success: true })
+    Typhoeus::Response.new(code:, body:)
   end
 end

@@ -1,15 +1,16 @@
 # frozen_string_literal: true
 
 class Request
-  attr_reader :method, :api_path, :headers, :body, :params, :endpoint, :rest
+  attr_reader :method, :api_path, :headers, :body, :params, :endpoint, :retries, :rest
 
-  def initialize(method, api_path, endpoint: "", headers: nil, auth_config: nil, body: nil, params: nil)
+  def initialize(method, api_path, endpoint: "", headers: nil, auth_config: nil, body: nil, params: nil, retries: nil)
     @method = method || :get
     @api_path = api_path || raise(ArgumentError, "Define api_path base URL")
     @endpoint = endpoint
     @headers = headers
     @body = body
     @params = params
+    @retries = retries
     @rest = {}
 
     configure_auth(auth_config)
@@ -20,7 +21,8 @@ class Request
       code: response.code,
       status: response.return_code,
       body: response.body,
-      headers: response.headers
+      headers: response.headers,
+      timed_out: response.timed_out?
     )
   rescue Typhoeus::Errors::TyphoeusError => e
     Response.new(
@@ -48,6 +50,6 @@ class Request
   end
 
   def response
-    @response ||= request.run
+    @response ||= Middleware::Retry.call(request, retries)
   end
 end

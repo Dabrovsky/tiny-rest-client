@@ -8,6 +8,7 @@ require "tiny_rest_client/strategies/auth/basic_auth"
 require "tiny_rest_client/strategies/auth/bearer"
 require "tiny_rest_client/strategies/auth/api_key"
 require "tiny_rest_client/strategies/auth/registry"
+require "tiny_rest_client/middleware/retry"
 require "tiny_rest_client/request"
 require "tiny_rest_client/response"
 require "tiny_rest_client/version"
@@ -44,14 +45,27 @@ module TinyRestClient
           @headers || {}
         end
       end
+
+      def retries(count = nil, on: nil, delay: nil)
+        if count.nil?
+          @retry_options ||= Middleware::Retry::DEFAULT_OPTIONS.dup
+        else
+          @retry_options = {
+            count: count || Middleware::Retry::DEFAULT_OPTIONS[:count],
+            on: Array(on || Middleware::Retry::DEFAULT_OPTIONS[:on]),
+            delay: delay || Middleware::Retry::DEFAULT_OPTIONS[:delay]
+          }
+        end
+      end
     end
 
-    attr_reader :api_path, :auth_config, :headers
+    attr_reader :api_path, :auth_config, :headers, :retries
 
-    def initialize(api_path: nil, auth: nil, headers: {})
+    def initialize(api_path: nil, auth: nil, headers: {}, retries: nil)
       @api_path = api_path || self.class.api_path || raise(ArgumentError, "Undefined api_path base URL")
       @auth_config = auth || self.class.authorization
       @headers = merge_headers(headers)
+      @retries = retries || self.class.retries
     end
 
     def head(endpoint, params = {})
@@ -89,7 +103,7 @@ module TinyRestClient
     end
 
     def common_params
-      { headers:, auth_config: }
+      { headers:, auth_config:, retries: }.compact_blank
     end
   end
 end
