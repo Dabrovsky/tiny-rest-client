@@ -22,7 +22,7 @@ A minimal HTTP client wrapper for Rails, built on top of Typhoeus. Perfect for q
 - [Rails Generator](#rails-generator)
 - [Configuration](#configuration)
 - [Authorization](#authorization)
-- [Retries & Delay (Throttling)](#retries-&-delay)
+- [Retries & Delay (Throttling)](#retries--delay-throttling)
 - [Making Requests](#making-requests)
 - [Response Handling](#response-handling)
 - [Contributing](#contributing)
@@ -218,7 +218,7 @@ Retries only happen on configurable HTTP status codes (default: 500, 502, 503, 5
 
 ```ruby
 class MyClient < TinyRestClient::Core
-  # class-level: retry 3 times on default 5xx errors
+  # retry 3 times on default 5xx errors
   retries 3
 
   # custom retryable codes
@@ -235,8 +235,7 @@ Add a fixed delay (seconds) between each request - useful for rate-limited APIs 
 
 ```ruby
 class MyClient < TinyRestClient::Core
-  # class-level: wait 1 second between every retry
-  retries 3, delay: 1.0
+  retries 3, delay: 1.0   # wait 1 second between every retry
 end
 
 # per-instance
@@ -267,9 +266,9 @@ helpers:
 |--------|-------------|
 | success? | Helper that represent successful response. |
 | failure? | The opposite. |
-| timed_out? | Return request timeout status |
+| timed_out? | Returns request timeout status |
 | code | HTTP status code (e.g. `200`, `404`). |
-| status | Return code symbol (e.g. `:ok`, `:couldnt_connect`). |
+| status | Returns code symbol (e.g. `:ok`, `:couldnt_connect`). |
 | headers | Hash of response headers (keys are not normalized). |
 | body | Auto-parsed JSON (symbolized keys). If parsing fails, returns the original raw string. |
 
