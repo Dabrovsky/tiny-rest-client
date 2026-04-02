@@ -103,7 +103,7 @@ module TinyRestClient
     end
 
     def common_params
-      { headers:, auth_config:, retries: }.compact_blank
+      { headers:, auth_config:, retries: }.compact
     end
   end
 end
